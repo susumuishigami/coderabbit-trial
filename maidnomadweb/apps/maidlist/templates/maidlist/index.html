@@ -1,0 +1,29 @@
+{% extends "stafflist/index.html" %}
+{% load static %}
+
+{% block entry_header_content %}
+    <h1 class="entry-title">{{ viewset.verbose_name }}</h1>
+{% endblock %}
+
+{% block staff_list_content %}
+<ul id="maidnomad-maid-thumbnail">
+    {% for staff in staff_list %}
+    <li>
+        <a href="{% url viewset.detail_name staff.code %}">
+        {% if staff.image_url %}
+            <img src="{{ staff.image_url }}" alt="{{ staff.name }}" style="height: 120px;width: auto" class="alignnone size-thumbnail" />
+        {% else %}
+            <img src="{% static 'maidlist/no_image.png' %}" alt="{{ staff.name }}" style="height: 120px;width: auto" class="alignnone size-thumbnail" />
+        {% endif %}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
+
+{% block footer_message %}
+{% markdown %}
+メイドカフェでノマド会でメイドさんをしてみたい方は、こちらのフォームよりご応募ください。
+[メイドカフェでノマド会メイドさん応募フォーム](https://docs.google.com/forms/d/e/1FAIpQLSegvKIC5PzQsVH0Fanb9L8ipdoZdk1wCj8osLsf1ch4XdVaqw/viewform?usp=fb_send_twt)
+{% endmarkdown %}
+{% endblock %}

@@ -1,0 +1,67 @@
+- hosts: server
+  become: no
+
+  tasks:  
+    - name: make virtualenv
+      command:
+        cmd: python3.10 -m venv venv
+        creates: venv
+        chdir: "/srv/{{ platformname }}"
+
+    - name: pip install gunicorn
+      pip:
+        name: gunicorn==20.1
+        virtualenv_command: -m venv
+        virtualenv: "/srv/{{ platformname }}/venv/"
+
+    - name: git pull
+      git:
+        repo: https://github.com/maidnomad/maidnomad-web.git
+        dest: "/srv/{{ platformname }}/maidnomadweb"
+        version: "{{ branch }}"
+
+    - name: pip install libraries
+      pip:
+        requirements: "/srv/{{ platformname }}/maidnomadweb/requirements.txt"
+        virtualenv_command: -m venv
+        virtualenv: "/srv/{{ platformname }}/venv/"
+
+    - name: set db directory group
+      file:
+        path: "/srv/{{ platformname }}/maidnomadweb/maidnomadweb"
+        state: directory
+        owner: "{{ platformname }}"
+        group: www-data
+
+    - name: restart gunicorn
+      command:
+        cmd: "sudo /srv/{{ platformname }}/restart.sh"
+
+    - name: migrate collectstatic
+      command:
+        cmd: "/srv/{{ platformname }}/venv/bin/python3.10 maidnomadweb/manage.py {{ item }}"
+        chdir: "/srv/{{ platformname }}/maidnomadweb"
+      with_items:
+        - migrate
+        - collectstatic --noinput --clear
+      environment:
+        DJANGO_SECRET_KEY: dummy
+        AWS_S3_ACCESS_KEY_ID: "{{ AWS_S3_ACCESS_KEY_ID }}"
+        AWS_S3_SECRET_ACCESS_KEY: "{{ AWS_S3_SECRET_ACCESS_KEY }}"
+        AWS_STORAGE_BUCKET_NAME: "{{ AWS_STORAGE_BUCKET_NAME }}"
+
+    - name: set db file group
+      file:
+        path: "/srv/{{ platformname }}/maidnomadweb/maidnomadweb/db.sqlite3"
+        state: file
+        owner: "{{ platformname }}"
+        mode: 0660
+        group: www-data
+
+    - name: set db directory group
+      file:
+        path: "/srv/{{ platformname }}/maidnomadweb/maidnomadweb/"
+        state: directory
+        owner: "{{ platformname }}"
+        mode: 0775
+        group: www-data
